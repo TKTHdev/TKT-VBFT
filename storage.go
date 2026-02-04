@@ -15,11 +15,16 @@ type Storage struct {
 	logWriter  *bufio.Writer
 	logOffsets []int64
 	async      bool
+	inMemory   bool
 }
 
-func NewStorage(id int, async bool) (*Storage, error) {
-	stateFilename := fmt.Sprintf("pbft_state_%d.bin", id)
-	logFilename := fmt.Sprintf("pbft_log_%d.bin", id)
+func NewStorage(id int, async bool, inMemory bool) (*Storage, error) {
+	prefix := ""
+	if inMemory {
+		prefix = "/dev/shm/"
+	}
+	stateFilename := fmt.Sprintf("%spbft_state_%d.bin", prefix, id)
+	logFilename := fmt.Sprintf("%spbft_log_%d.bin", prefix, id)
 
 	sFile, err := os.OpenFile(stateFilename, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
@@ -39,6 +44,7 @@ func NewStorage(id int, async bool) (*Storage, error) {
 		logWriter:  bufio.NewWriter(lFile),
 		logOffsets: []int64{},
 		async:      async,
+		inMemory:   inMemory,
 	}, nil
 }
 

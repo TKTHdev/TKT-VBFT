@@ -22,6 +22,7 @@ func main() {
 					workers := c.Int("workers")
 					debug := c.Bool("debug")
 					asyncLog := c.Bool("async-log")
+					inMemory := c.Bool("in-memory")
 					workloadStr := c.String("workload")
 					workload := 50
 					switch workloadStr {
@@ -32,7 +33,7 @@ func main() {
 					case "ycsb-c":
 						workload = 0
 					}
-					p := NewPBFT(id, conf, writeBatchSize, readBatchSize, workers, debug, workload, asyncLog)
+					p := NewPBFT(id, conf, writeBatchSize, readBatchSize, workers, debug, workload, asyncLog, inMemory)
 					p.Run()
 					return nil
 				},
@@ -68,6 +69,11 @@ func main() {
 					&cli.BoolFlag{
 						Name:  "async-log",
 						Usage: "Enable asynchronous disk writes",
+						Value: false,
+					},
+					&cli.BoolFlag{
+						Name:  "in-memory",
+						Usage: "Use /dev/shm for storage (Linux only)",
 						Value: false,
 					},
 					&cli.StringFlag{

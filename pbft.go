@@ -69,10 +69,10 @@ type PBFT struct {
 	mu sync.RWMutex
 }
 
-func NewPBFT(id int, confPath string, writeBatchSize int, readBatchSize int, workers int, debug bool, workload int, asyncLog bool) *PBFT {
+func NewPBFT(id int, confPath string, writeBatchSize int, readBatchSize int, workers int, debug bool, workload int, asyncLog bool, inMemory bool) *PBFT {
 	peerIPPort := parseConfig(confPath)
 
-	storage, err := NewStorage(id, asyncLog)
+	storage, err := NewStorage(id, asyncLog, inMemory)
 	if err != nil {
 		panic(err)
 	}
