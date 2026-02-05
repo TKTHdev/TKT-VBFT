@@ -72,7 +72,7 @@ func (p *PBFT) PrePrepare(args *PrePrepareArgs, reply *PrePrepareReply) error {
 	}
 	data := digestPrePrepare(args.View, args.SequenceNumber, args.Digest)
 	if err := verify(pubKey, data, args.Signature); err != nil {
-		p.logPutLocked(fmt.Sprintf("Signature verification failed for PrePrepare seq %d", args.SequenceNumber), RED)
+		p.logPutLocked(fmt.Sprintf("Signature verification failed for PrePrepare seq %d. Data: '%s', PubKeyN: %x..., SigLen: %d", args.SequenceNumber, string(data), pubKey[:5], len(args.Signature)), RED)
 		reply.Success = false
 		return nil
 	}
@@ -94,6 +94,13 @@ func (p *PBFT) PrePrepare(args *PrePrepareArgs, reply *PrePrepareReply) error {
 	state.PrePrepared = true
 	state.PrePrepareMsg = args
 	
+	// WAL
+	if err := p.storage.AppendEntry(LogEntry{View: args.View, Command: args.Command}); err != nil {
+		p.logPutLocked("Failed to append to log", RED)
+		reply.Success = false
+		return nil
+	}
+
 	p.logPutLocked(fmt.Sprintf("Received PrePrepare for seq %d", args.SequenceNumber), BLUE)
 
 	// 3. Broadcast Prepare
@@ -118,7 +125,7 @@ func (p *PBFT) Prepare(args *PrepareArgs, reply *PrepareReply) error {
 	}
 	data := digestPrepare(args.View, args.SequenceNumber, args.Digest, args.NodeID)
 	if err := verify(pubKey, data, args.Signature); err != nil {
-		p.logPutLocked(fmt.Sprintf("Signature verification failed for Prepare from %d seq %d", args.NodeID, args.SequenceNumber), RED)
+		p.logPutLocked(fmt.Sprintf("Signature verification failed for Prepare from %d seq %d. Data: '%s', PubKeyN: %x..., SigLen: %d", args.NodeID, args.SequenceNumber, string(data), pubKey[:5], len(args.Signature)), RED)
 		reply.Success = false
 		return nil
 	}
@@ -151,7 +158,7 @@ func (p *PBFT) Commit(args *CommitArgs, reply *CommitReply) error {
 	}
 	data := digestCommit(args.View, args.SequenceNumber, args.Digest, args.NodeID)
 	if err := verify(pubKey, data, args.Signature); err != nil {
-		p.logPutLocked(fmt.Sprintf("Signature verification failed for Commit from %d seq %d", args.NodeID, args.SequenceNumber), RED)
+		p.logPutLocked(fmt.Sprintf("Signature verification failed for Commit from %d seq %d. Data: '%s', PubKeyN: %x..., SigLen: %d", args.NodeID, args.SequenceNumber, string(data), pubKey[:5], len(args.Signature)), RED)
 		reply.Success = false
 		return nil
 	}

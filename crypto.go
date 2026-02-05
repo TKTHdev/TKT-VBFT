@@ -1,43 +1,50 @@
 package main
 
 import (
-	"crypto"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/sha256"
+	"crypto/ed25519"
 	"fmt"
+	mrand "math/rand"
 )
 
 // DeterministicReader is a dummy reader for deterministic key generation (FOR TESTING ONLY)
 // In production, use crypto/rand.Reader
 type DeterministicReader struct {
-	seed int64
+	src mrand.Source
 }
 
 func (r *DeterministicReader) Read(p []byte) (n int, err error) {
 	for i := 0; i < len(p); i++ {
-		// Simple LCG
-		r.seed = (r.seed*1103515245 + 12345) & 0x7fffffff
-		p[i] = byte(r.seed)
+		p[i] = byte(r.src.Int63())
 	}
 	return len(p), nil
 }
 
-func generateKey(id int) (*rsa.PrivateKey, error) {
+func generateKey(id int) (ed25519.PrivateKey, error) {
 	// Use ID as seed to generate same key for same ID every time
-	reader := &DeterministicReader{seed: int64(id + 1000)} // offset to avoid trivial seeds
-	// Small key size for performance in this prototype (usually 2048+)
-	return rsa.GenerateKey(reader, 1024)
+	src := mrand.NewSource(int64(id + 1000))
+	reader := &DeterministicReader{src: src}
+	_, priv, err := ed25519.GenerateKey(reader)
+	return priv, err
 }
 
-func sign(privKey *rsa.PrivateKey, data []byte) ([]byte, error) {
-	hashed := sha256.Sum256(data)
-	return rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA256, hashed[:])
+func sign(privKey ed25519.PrivateKey, data []byte) ([]byte, error) {
+	// Ed25519 signs the message itself, usually.
+	// But to match previous logic (hashing first), we can hash first.
+	// However, Ed25519 is fast enough to sign full message, or we can sign hash.
+	// Standard Ed25519 signs the message.
+	// Let's stick to previous behavior: sign the hash?
+	// RSA PKCS1v15 usually signs the hash.
+	// Ed25519 signs the message.
+	// But if 'data' is already large? 'digestPrePrepare' returns a small string.
+	// So we can sign 'data' directly.
+	return ed25519.Sign(privKey, data), nil
 }
 
-func verify(pubKey *rsa.PublicKey, data []byte, signature []byte) error {
-	hashed := sha256.Sum256(data)
-	return rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed[:], signature)
+func verify(pubKey ed25519.PublicKey, data []byte, signature []byte) error {
+	if ed25519.Verify(pubKey, data, signature) {
+		return nil
+	}
+	return fmt.Errorf("invalid signature")
 }
 
 // Helper to construct data for signing

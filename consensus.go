@@ -32,6 +32,14 @@ func (p *PBFT) broadcastPrePrepare(seq int, command []byte) {
 	state := p.getRequestState(seq)
 	state.PrePrepared = true
 	state.PrePrepareMsg = args
+
+	// WAL
+	if err := p.storage.AppendEntry(LogEntry{View: view, Command: command}); err != nil {
+		p.logPutLocked("Failed to append to log", RED)
+		p.mu.Unlock()
+		return
+	}
+
 	p.mu.Unlock()
 
 	p.logPut(fmt.Sprintf("Broadcasting PrePrepare for seq %d", seq), BLUE)

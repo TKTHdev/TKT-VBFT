@@ -1,7 +1,7 @@
 package main
 
 import (
-	"crypto/rsa"
+	"crypto/ed25519"
 	"fmt"
 	"net/rpc"
 	"sync"
@@ -47,8 +47,8 @@ type PBFT struct {
 	rpcConns    map[int]*rpc.Client
 
 	// Crypto
-	privKey *rsa.PrivateKey
-	pubKeys map[int]*rsa.PublicKey
+	privKey ed25519.PrivateKey
+	pubKeys map[int]ed25519.PublicKey
 
 	// Consensus State
 	view           int
@@ -82,13 +82,13 @@ func NewPBFT(id int, confPath string, writeBatchSize int, readBatchSize int, wor
 	if err != nil {
 		panic(err)
 	}
-	pubKeys := make(map[int]*rsa.PublicKey)
+	pubKeys := make(map[int]ed25519.PublicKey)
 	for peerID := range peerIPPort {
 		key, err := generateKey(peerID)
 		if err != nil {
 			panic(err)
 		}
-		pubKeys[peerID] = &key.PublicKey
+		pubKeys[peerID] = key.Public().(ed25519.PublicKey)
 	}
 
 	p := &PBFT{
@@ -115,6 +115,7 @@ func NewPBFT(id int, confPath string, writeBatchSize int, readBatchSize int, wor
 		pendingResponses: make(map[int]chan Response),
 		mu:             sync.RWMutex{},
 	}
+	fmt.Println(p)
 
 	return p
 }
