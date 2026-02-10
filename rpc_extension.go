@@ -45,7 +45,7 @@ func (p *PBFT) handleClientReplyLocked(seq int, nodeID int, value string) {
 	if count >= required {
 		p.logPutLocked(fmt.Sprintf("Client received %d replies for seq %d. Returning to app.", count, seq), GREEN)
 		state.ReplySent = true
-		
+
 		results, err := decodeBatchResults(value)
 		if err != nil {
 			// If decoding fails, fallback to treating as single result?
@@ -57,14 +57,14 @@ func (p *PBFT) handleClientReplyLocked(seq int, nodeID int, value string) {
 
 		if chans, ok := p.pendingResponses[seq]; ok {
 			delete(p.pendingResponses, seq)
-			
+
 			// Match results to channels
 			// If mismatch, we have a problem. But we assume 1:1 if batching worked.
 			limit := len(chans)
 			if len(results) < limit {
 				limit = len(results)
 			}
-			
+
 			for i := 0; i < limit; i++ {
 				resp := Response{
 					success: true,

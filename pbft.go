@@ -47,9 +47,9 @@ type PBFT struct {
 
 	// Crypto
 	cryptoType CryptoType
-	privKey    interface{}            // ed25519.PrivateKey or nil for MAC
-	pubKeys    map[int]interface{}    // ed25519.PublicKey for ed25519, []byte for MAC (shared key with peer)
-	macKeys    map[int][]byte         // MAC: shared keys with each peer
+	privKey    interface{}         // ed25519.PrivateKey or nil for MAC
+	pubKeys    map[int]interface{} // ed25519.PublicKey for ed25519, []byte for MAC (shared key with peer)
+	macKeys    map[int][]byte      // MAC: shared keys with each peer
 
 	// Consensus State
 	view           int
@@ -63,7 +63,7 @@ type PBFT struct {
 	// Communication
 	ReqCh  chan ClientRequest
 	ReadCh chan []ClientRequest
-	
+
 	pendingResponses map[int][]chan Response // SequenceNumber -> Response Channels
 
 	// Client Handling
